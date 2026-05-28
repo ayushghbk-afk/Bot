@@ -1,12 +1,11 @@
 const mineflayer = require("mineflayer");
 const { pathfinder, Movements, goals } = require("mineflayer-pathfinder");
-const autoeat = require("mineflayer-auto-eat").plugin;
 const express = require("express");
 
 const app = express();
 
 app.get("/", (req, res) => {
-    res.send("Ultimate AFK Bot Running");
+    res.send("AFK Bot Online");
 });
 
 app.listen(process.env.PORT || 3000);
@@ -27,24 +26,13 @@ function startBot() {
         version: false
     });
 
-    // Plugins
     bot.loadPlugin(pathfinder);
-    bot.loadPlugin(autoeat);
 
-    bot.once("spawn", async () => {
+    bot.once("spawn", () => {
 
-        console.log("Bot Spawned!");
+        console.log("Spawned!");
 
-        // Auto Eat
-        bot.autoeat.options = {
-            priority: "foodPoints",
-            startAt: 14,
-            bannedFood: []
-        };
-
-        console.log("AutoEat Enabled");
-
-        // Random movement
+        // Anti AFK
         setInterval(() => {
 
             const actions = [
@@ -60,20 +48,17 @@ function startBot() {
 
             setTimeout(() => {
                 bot.setControlState(action, false);
-            }, random(1000, 3000));
+            }, 2000);
 
-            // Jump
             bot.setControlState("jump", true);
 
             setTimeout(() => {
                 bot.setControlState("jump", false);
             }, 500);
 
-            console.log("Moving:", action);
+        }, 30000);
 
-        }, random(20000, 40000));
-
-        // Random look around
+        // Look around
         setInterval(() => {
 
             const yaw = Math.random() * Math.PI * 2;
@@ -81,9 +66,7 @@ function startBot() {
 
             bot.look(yaw, pitch, true);
 
-            console.log("Looking around");
-
-        }, random(10000, 25000));
+        }, 15000);
 
         // Auto sleep
         setInterval(async () => {
@@ -98,25 +81,44 @@ function startBot() {
 
                     if (bed) {
 
-                        console.log("Found bed");
+                        console.log("Sleeping...");
 
                         await bot.sleep(bed);
-
-                        console.log("Sleeping");
                     }
                 }
 
             } catch (err) {
-                console.log("Sleep Error:", err.message);
+                console.log(err.message);
             }
 
         }, 60000);
-
     });
 
-    // Wake up
-    bot.on("wake", () => {
-        console.log("Woke up");
+    // Simple auto eat without plugin
+    bot.on("health", async () => {
+
+        try {
+
+            if (bot.food < 15) {
+
+                const food = bot.inventory.items().find(item =>
+                    item.name.includes("bread") ||
+                    item.name.includes("beef") ||
+                    item.name.includes("apple")
+                );
+
+                if (food) {
+
+                    await bot.equip(food, "hand");
+                    await bot.consume();
+
+                    console.log("Eating food");
+                }
+            }
+
+        } catch (err) {
+            console.log("Eat error:", err.message);
+        }
     });
 
     // Chat commands
@@ -147,45 +149,18 @@ function startBot() {
 
             bot.chat("Coming");
         }
-
-        if (message === "jump") {
-
-            bot.setControlState("jump", true);
-
-            setTimeout(() => {
-                bot.setControlState("jump", false);
-            }, 1000);
-        }
-
-        if (message === "sit") {
-            bot.clearControlStates();
-            bot.chat("Okay");
-        }
     });
 
-    // Logs
-    bot.on("messagestr", (msg) => {
-        console.log("[CHAT]", msg);
-    });
+    bot.on("messagestr", console.log);
+    bot.on("kicked", console.log);
+    bot.on("error", console.log);
 
-    bot.on("kicked", (reason) => {
-        console.log("Kicked:", reason);
-    });
-
-    bot.on("error", (err) => {
-        console.log("Error:", err.message);
-    });
-
-    // Auto reconnect
     bot.on("end", () => {
 
         console.log("Disconnected");
 
         setTimeout(() => {
-
-            console.log("Reconnecting...");
             startBot();
-
         }, 10000);
     });
 }
