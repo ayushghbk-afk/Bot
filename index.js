@@ -4,22 +4,27 @@ const express = require("express");
 const app = express();
 
 app.get("/", (req, res) => {
-    res.send("Bot Online");
+    res.send("Bot Running");
 });
 
 app.listen(process.env.PORT || 3000);
 
-function createBot() {
+function startBot() {
 
     const bot = mineflayer.createBot({
         host: "Ragebaitrebels.aternos.me",
         port: 56690,
         username: "AFKBot",
-        auth: "offline"
+        auth: "offline",
+        version: false
     });
 
     bot.on("login", () => {
-        console.log("Joined!");
+        console.log("Connected!");
+    });
+
+    bot.on("spawn", () => {
+        console.log("Spawned!");
 
         setInterval(() => {
 
@@ -32,14 +37,17 @@ function createBot() {
         }, 30000);
     });
 
-    bot.on("end", () => {
-        console.log("Disconnected");
-        setTimeout(createBot, 5000);
+    bot.on("messagestr", (msg) => {
+        console.log(msg);
     });
 
-    bot.on("error", (err) => {
-        console.log(err.message);
+    bot.on("kicked", console.log);
+    bot.on("error", console.log);
+
+    bot.on("end", () => {
+        console.log("Reconnecting...");
+        setTimeout(startBot, 10000);
     });
 }
 
-createBot();
+startBot();
