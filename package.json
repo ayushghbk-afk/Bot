@@ -9,7 +9,6 @@
   "dependencies": {
     "express": "^4.18.2",
     "mineflayer": "^4.20.1",
-    "mineflayer-auto-eat": "^5.0.0",
     "mineflayer-pathfinder": "^2.4.5"
   }
 }
