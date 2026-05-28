@@ -12,8 +12,8 @@ app.listen(process.env.PORT || 3000);
 function createBot() {
 
     const bot = mineflayer.createBot({
-        host: "YOUR_SERVER_IP",
-        port: 25565,
+        host: "Ragebaitrebels.aternos.me",
+        port: 56690,
         username: "AFKBot",
         auth: "offline"
     });
