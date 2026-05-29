@@ -1,11 +1,10 @@
 const mineflayer = require("mineflayer");
-const { pathfinder, Movements, goals } = require("mineflayer-pathfinder");
 const express = require("express");
 
 const app = express();
 
 app.get("/", (req, res) => {
-    res.send("AFK Bot Online");
+    res.send("Bot Online");
 });
 
 app.listen(process.env.PORT || 3000);
@@ -23,16 +22,20 @@ function startBot() {
         port: 56690,
         username: "AFKBot",
         auth: "offline",
-        version: false
+
+        // because your server uses ViaVersion
+        version: "1.21.4"
     });
 
-    bot.loadPlugin(pathfinder);
+    bot.on("login", () => {
+        console.log("Connected!");
+    });
 
-    bot.once("spawn", () => {
+    bot.on("spawn", () => {
 
         console.log("Spawned!");
 
-        // Anti AFK
+        // Human-like random movement
         setInterval(() => {
 
             const actions = [
@@ -44,21 +47,27 @@ function startBot() {
 
             const action = actions[random(0, actions.length - 1)];
 
+            console.log("Moving:", action);
+
             bot.setControlState(action, true);
+
+            // random jump
+            if (Math.random() > 0.5) {
+
+                bot.setControlState("jump", true);
+
+                setTimeout(() => {
+                    bot.setControlState("jump", false);
+                }, 500);
+            }
 
             setTimeout(() => {
                 bot.setControlState(action, false);
-            }, 2000);
+            }, random(1000, 4000));
 
-            bot.setControlState("jump", true);
+        }, random(10000, 25000));
 
-            setTimeout(() => {
-                bot.setControlState("jump", false);
-            }, 500);
-
-        }, 30000);
-
-        // Look around
+        // Random looking around
         setInterval(() => {
 
             const yaw = Math.random() * Math.PI * 2;
@@ -66,101 +75,32 @@ function startBot() {
 
             bot.look(yaw, pitch, true);
 
-        }, 15000);
+            console.log("Looking around");
 
-        // Auto sleep
-        setInterval(async () => {
-
-            try {
-
-                if (bot.time.isNight) {
-
-                    const bed = bot.findBlock({
-                        matching: block => bot.isABed(block)
-                    });
-
-                    if (bed) {
-
-                        console.log("Sleeping...");
-
-                        await bot.sleep(bed);
-                    }
-                }
-
-            } catch (err) {
-                console.log(err.message);
-            }
-
-        }, 60000);
+        }, random(5000, 15000));
     });
 
-    // Simple auto eat without plugin
-    bot.on("health", async () => {
-
-        try {
-
-            if (bot.food < 15) {
-
-                const food = bot.inventory.items().find(item =>
-                    item.name.includes("bread") ||
-                    item.name.includes("beef") ||
-                    item.name.includes("apple")
-                );
-
-                if (food) {
-
-                    await bot.equip(food, "hand");
-                    await bot.consume();
-
-                    console.log("Eating food");
-                }
-            }
-
-        } catch (err) {
-            console.log("Eat error:", err.message);
-        }
+    bot.on("messagestr", (msg) => {
+        console.log(msg);
     });
 
-    // Chat commands
-    bot.on("chat", (username, message) => {
-
-        if (username === bot.username) return;
-
-        if (message === "come") {
-
-            const player = bot.players[username];
-
-            if (!player || !player.entity) return;
-
-            const mcData = require("minecraft-data")(bot.version);
-
-            const movements = new Movements(bot, mcData);
-
-            bot.pathfinder.setMovements(movements);
-
-            bot.pathfinder.setGoal(
-                new goals.GoalNear(
-                    player.entity.position.x,
-                    player.entity.position.y,
-                    player.entity.position.z,
-                    1
-                )
-            );
-
-            bot.chat("Coming");
-        }
+    bot.on("kicked", (reason) => {
+        console.log("Kicked:", reason);
     });
 
-    bot.on("messagestr", console.log);
-    bot.on("kicked", console.log);
-    bot.on("error", console.log);
+    bot.on("error", (err) => {
+        console.log("Error:", err.message);
+    });
 
     bot.on("end", () => {
 
         console.log("Disconnected");
 
         setTimeout(() => {
+
+            console.log("Reconnecting...");
             startBot();
+
         }, 10000);
     });
 }
