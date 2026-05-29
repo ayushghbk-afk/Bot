@@ -18,7 +18,7 @@ function startBot() {
         port: 56690,
         username: "AFKBot",
         auth: "offline",
-        version: "1.21.4"
+        version: "1.21.1"
     });
 
     bot.on("connect", () => {
